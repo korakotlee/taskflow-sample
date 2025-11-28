@@ -1,51 +1,35 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-import { config } from './config';
-import './App.css';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Login } from './pages/Login';
+import { Dashboard } from './pages/Dashboard';
+import { ProjectView } from './pages/ProjectView';
+import { Signup } from './pages/Signup';
+import { PrivateRoute } from './components/PrivateRoute';
+import { Layout } from './components/layout/Layout';
+import { Settings } from './pages/Settings';
+import { NotFound } from './pages/NotFound';
+// Note: `useAuth` is used inside page components — not needed at top-level App
 
-interface HealthResponse {
-  status: string;
-  timestamp: string;
-  version: string;
-}
+const queryClient = new QueryClient();
 
-function App() {
-  const [health, setHealth] = useState<HealthResponse | null>(null);
-  const [error, setError] = useState<string>('');
-
-  useEffect(() => {
-    const fetchHealth = async () => {
-      try {
-        const response = await axios.get<HealthResponse>(`${config.apiUrl}/health`);
-        setHealth(response.data);
-      } catch (err) {
-        setError('Failed to connect to backend');
-        console.error(err);
-      }
-    };
-
-    fetchHealth();
-  }, []);
-
+export default function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <h1>TaskFlow</h1>
-        {health ? (
-          <div>
-            <p>✅ Backend connected</p>
-            <p>Status: {health.status}</p>
-            <p>Version: {health.version}</p>
-            <p>Time: {new Date(health.timestamp).toLocaleString()}</p>
-          </div>
-        ) : error ? (
-          <p>❌ {error}</p>
-        ) : (
-          <p>Connecting to backend...</p>
-        )}
-      </header>
-    </div>
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+
+          <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
+            <Route index element={<Navigate to="/dashboard" replace />} />
+            <Route path="dashboard" element={<Dashboard />} />
+            <Route path="projects/:id" element={<ProjectView />} />
+            <Route path="settings" element={<Settings />} />
+          </Route>
+
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </BrowserRouter>
+    </QueryClientProvider>
   );
 }
-
-export default App;
